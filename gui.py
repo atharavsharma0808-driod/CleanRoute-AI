@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
+import json
+import os
 
 from main import (
     calculate_priority,
@@ -23,8 +25,46 @@ window.geometry("600x750")
 window.resizable(False, False)
 
 
-# Store all submitted reports
-reports = []
+# ==============================
+# DATA FILE
+# ==============================
+
+DATA_FILE = "reports.json"
+
+
+# ==============================
+# LOAD REPORTS
+# ==============================
+
+def load_reports():
+
+    if not os.path.exists(DATA_FILE):
+        return []
+
+    try:
+        with open(DATA_FILE, "r") as file:
+            return json.load(file)
+
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+reports = load_reports()
+
+
+# ==============================
+# SAVE REPORTS
+# ==============================
+
+def save_reports():
+
+    with open(DATA_FILE, "w") as file:
+
+        json.dump(
+            reports,
+            file,
+            indent=4
+        )
 
 
 # ==============================
@@ -188,7 +228,6 @@ repeat_dropdown.pack()
 
 def view_reports():
 
-    # Create dashboard window
     dashboard = tk.Toplevel(window)
 
     dashboard.title(
@@ -201,7 +240,7 @@ def view_reports():
 
 
     # ==============================
-    # DASHBOARD TITLE
+    # TITLE
     # ==============================
 
     dashboard_title = tk.Label(
@@ -216,7 +255,7 @@ def view_reports():
 
 
     # ==============================
-    # SEARCH AND FILTER FRAME
+    # SEARCH FRAME
     # ==============================
 
     filter_frame = tk.Frame(
@@ -228,7 +267,6 @@ def view_reports():
     )
 
 
-    # Search label
     search_label = tk.Label(
         filter_frame,
         text="Search Location:"
@@ -241,7 +279,6 @@ def view_reports():
     )
 
 
-    # Search entry
     search_entry = tk.Entry(
         filter_frame,
         width=25
@@ -254,7 +291,6 @@ def view_reports():
     )
 
 
-    # Priority label
     priority_label = tk.Label(
         filter_frame,
         text="Priority:"
@@ -267,7 +303,6 @@ def view_reports():
     )
 
 
-    # Priority dropdown
     priority_filter = ttk.Combobox(
         filter_frame,
         values=[
@@ -289,9 +324,9 @@ def view_reports():
     )
 
 
-    # ==========================================================
+    # ==============================
     # STATISTICS
-    # ==========================================================
+    # ==============================
 
     stats_frame = tk.Frame(
         dashboard
@@ -354,9 +389,9 @@ def view_reports():
     )
 
 
-    # ==========================================================
+    # ==============================
     # TABLE
-    # ==========================================================
+    # ==============================
 
     columns = (
         "ID",
@@ -376,7 +411,6 @@ def view_reports():
     )
 
 
-    # Headings
     table.heading(
         "ID",
         text="Report ID"
@@ -408,7 +442,6 @@ def view_reports():
     )
 
 
-    # Column widths
     table.column(
         "ID",
         width=100
@@ -461,38 +494,41 @@ def view_reports():
 
 
     # ==========================================================
-    # UPDATE TABLE FUNCTION
+    # UPDATE TABLE
     # ==========================================================
 
     def update_table():
 
-        # Remove existing rows
+        # Remove old rows
         for item in table.get_children():
 
             table.delete(item)
 
 
-        # Get search text
-        search_text = search_entry.get().strip().lower()
+        search_text = (
+            search_entry
+            .get()
+            .strip()
+            .lower()
+        )
 
 
-        # Get selected priority
-        selected_priority = priority_filter.get()
+        selected_priority = (
+            priority_filter.get()
+        )
 
 
-        # Filter reports
         filtered_reports = []
 
 
         for report in reports:
 
-            # Location search
             location_matches = (
-                search_text in report["location"].lower()
+                search_text
+                in report["location"].lower()
             )
 
 
-            # Priority filter
             if selected_priority == "All":
 
                 priority_matches = True
@@ -506,7 +542,6 @@ def view_reports():
                 )
 
 
-            # Add matching report
             if (
                 location_matches
                 and priority_matches
@@ -517,7 +552,7 @@ def view_reports():
                 )
 
 
-        # Sort by priority score
+        # Sort by score
         filtered_reports.sort(
             key=lambda report: report["priority_score"],
             reverse=True
@@ -525,7 +560,7 @@ def view_reports():
 
 
         # ==============================
-        # UPDATE STATISTICS
+        # STATISTICS
         # ==============================
 
         total_reports = len(
@@ -533,9 +568,7 @@ def view_reports():
         )
 
         high_reports = 0
-
         medium_reports = 0
-
         low_reports = 0
 
 
@@ -572,7 +605,7 @@ def view_reports():
 
 
         # ==============================
-        # ADD FILTERED REPORTS
+        # ADD REPORTS
         # ==============================
 
         for report in filtered_reports:
@@ -608,9 +641,9 @@ def view_reports():
             )
 
 
-    # ==========================================================
+    # ==============================
     # SEARCH BUTTON
-    # ==========================================================
+    # ==============================
 
     search_button = tk.Button(
         filter_frame,
@@ -625,9 +658,9 @@ def view_reports():
     )
 
 
-    # ==========================================================
-    # SHOW ALL BUTTON
-    # ==========================================================
+    # ==============================
+    # SHOW ALL
+    # ==============================
 
     def show_all():
 
@@ -656,9 +689,9 @@ def view_reports():
     )
 
 
-    # ==========================================================
+    # ==============================
     # DISPLAY TABLE
-    # ==========================================================
+    # ==============================
 
     table.pack(
         padx=20,
@@ -668,17 +701,16 @@ def view_reports():
     )
 
 
-    # Load initial reports
+    # Load reports immediately
     update_table()
 
 
 # ==========================================================
-# SUBMIT REPORT FUNCTION
+# SUBMIT REPORT
 # ==========================================================
 
 def submit_report():
 
-    # Get values
     location = location_entry.get().strip()
 
     waste_type = waste_dropdown.get().lower()
@@ -725,16 +757,17 @@ def submit_report():
         severity
     )
 
+
     location_score = calculate_location_score(
         location_type
     )
+
 
     waste_score = calculate_waste_score(
         waste_type
     )
 
 
-    # Repeat score
     if repeat_report == "yes":
 
         repeat_score = 15
@@ -744,7 +777,6 @@ def submit_report():
         repeat_score = 0
 
 
-    # Final score
     priority_score = (
         severity_score
         + location_score
@@ -753,13 +785,11 @@ def submit_report():
     )
 
 
-    # Maximum score
     if priority_score > 100:
 
         priority_score = 100
 
 
-    # Priority level
     priority = get_priority_level(
         priority_score
     )
@@ -769,7 +799,9 @@ def submit_report():
     # REPORT ID
     # ==============================
 
-    report_id = f"CR-{len(reports) + 1:03d}"
+    report_id = (
+        f"CR-{len(reports) + 1:03d}"
+    )
 
 
     # ==============================
@@ -782,7 +814,7 @@ def submit_report():
 
 
     # ==============================
-    # STORE REPORT
+    # CREATE REPORT
     # ==============================
 
     report = {
@@ -807,9 +839,17 @@ def submit_report():
     }
 
 
+    # Add report
     reports.append(
         report
     )
+
+
+    # ==============================
+    # SAVE TO JSON
+    # ==============================
+
+    save_reports()
 
 
     # ==============================
