@@ -196,21 +196,118 @@ def view_reports():
     )
 
     dashboard.geometry(
-        "950x500"
+        "950x600"
     )
 
 
-    # Dashboard title
+    # ==============================
+    # DASHBOARD TITLE
+    # ==============================
+
     dashboard_title = tk.Label(
         dashboard,
         text="📊 Report Dashboard",
         font=("Arial", 20, "bold")
     )
 
-    dashboard_title.pack(pady=15)
+    dashboard_title.pack(pady=(15, 5))
 
 
-    # Check if reports exist
+    # ==============================
+    # CALCULATE STATISTICS
+    # ==============================
+
+    total_reports = len(reports)
+
+    high_reports = 0
+    medium_reports = 0
+    low_reports = 0
+
+
+    for report in reports:
+
+        if report["priority"].startswith("HIGH"):
+
+            high_reports += 1
+
+        elif report["priority"].startswith("MEDIUM"):
+
+            medium_reports += 1
+
+        elif report["priority"].startswith("LOW"):
+
+            low_reports += 1
+
+
+    # ==============================
+    # STATISTICS DISPLAY
+    # ==============================
+
+    stats_frame = tk.Frame(
+        dashboard
+    )
+
+    stats_frame.pack(
+        pady=10
+    )
+
+
+    total_label = tk.Label(
+        stats_frame,
+        text=f"Total Reports: {total_reports}",
+        font=("Arial", 13, "bold")
+    )
+
+    total_label.grid(
+        row=0,
+        column=0,
+        padx=25
+    )
+
+
+    high_label = tk.Label(
+        stats_frame,
+        text=f"🔴 HIGH: {high_reports}",
+        font=("Arial", 13, "bold")
+    )
+
+    high_label.grid(
+        row=0,
+        column=1,
+        padx=25
+    )
+
+
+    medium_label = tk.Label(
+        stats_frame,
+        text=f"🟠 MEDIUM: {medium_reports}",
+        font=("Arial", 13, "bold")
+    )
+
+    medium_label.grid(
+        row=0,
+        column=2,
+        padx=25
+    )
+
+
+    low_label = tk.Label(
+        stats_frame,
+        text=f"🟢 LOW: {low_reports}",
+        font=("Arial", 13, "bold")
+    )
+
+    low_label.grid(
+        row=0,
+        column=3,
+        padx=25
+    )
+
+
+    # ==============================
+    # NO REPORTS CHECK
+    # ==============================
+
     if len(reports) == 0:
 
         empty_label = tk.Label(
@@ -219,12 +316,17 @@ def view_reports():
             font=("Arial", 14)
         )
 
-        empty_label.pack(pady=50)
+        empty_label.pack(
+            pady=50
+        )
 
         return
 
 
-    # Sort reports by priority
+    # ==============================
+    # SORT REPORTS
+    # ==============================
+
     sorted_reports = sorted(
         reports,
         key=lambda report: report["priority_score"],
@@ -232,7 +334,10 @@ def view_reports():
     )
 
 
-    # Table columns
+    # ==============================
+    # TABLE
+    # ==============================
+
     columns = (
         "ID",
         "Location",
@@ -243,7 +348,6 @@ def view_reports():
     )
 
 
-    # Create table
     table = ttk.Treeview(
         dashboard,
         columns=columns,
@@ -253,7 +357,7 @@ def view_reports():
 
 
     # ==============================
-    # TABLE HEADINGS
+    # HEADINGS
     # ==============================
 
     table.heading(
@@ -350,7 +454,7 @@ def view_reports():
 
         priority_text = report["priority"]
 
-        # Determine tag
+
         if priority_text.startswith("HIGH"):
 
             tag = "high"
@@ -405,7 +509,10 @@ def submit_report():
     repeat_report = repeat_dropdown.get().lower()
 
 
-    # Validate location
+    # ==============================
+    # VALIDATION
+    # ==============================
+
     if location == "":
 
         result_label.config(
@@ -415,7 +522,6 @@ def submit_report():
         return
 
 
-    # Validate dropdowns
     if (
         waste_type == ""
         or severity == ""
