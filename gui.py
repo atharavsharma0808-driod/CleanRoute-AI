@@ -182,9 +182,9 @@ repeat_dropdown = ttk.Combobox(
 repeat_dropdown.pack()
 
 
-# ==============================
+# ==========================================================
 # VIEW REPORT DASHBOARD
-# ==============================
+# ==========================================================
 
 def view_reports():
 
@@ -196,7 +196,7 @@ def view_reports():
     )
 
     dashboard.geometry(
-        "950x600"
+        "1000x650"
     )
 
 
@@ -210,38 +210,88 @@ def view_reports():
         font=("Arial", 20, "bold")
     )
 
-    dashboard_title.pack(pady=(15, 5))
+    dashboard_title.pack(
+        pady=(15, 5)
+    )
 
 
     # ==============================
-    # CALCULATE STATISTICS
+    # SEARCH AND FILTER FRAME
     # ==============================
 
-    total_reports = len(reports)
+    filter_frame = tk.Frame(
+        dashboard
+    )
 
-    high_reports = 0
-    medium_reports = 0
-    low_reports = 0
-
-
-    for report in reports:
-
-        if report["priority"].startswith("HIGH"):
-
-            high_reports += 1
-
-        elif report["priority"].startswith("MEDIUM"):
-
-            medium_reports += 1
-
-        elif report["priority"].startswith("LOW"):
-
-            low_reports += 1
+    filter_frame.pack(
+        pady=10
+    )
 
 
-    # ==============================
-    # STATISTICS DISPLAY
-    # ==============================
+    # Search label
+    search_label = tk.Label(
+        filter_frame,
+        text="Search Location:"
+    )
+
+    search_label.grid(
+        row=0,
+        column=0,
+        padx=5
+    )
+
+
+    # Search entry
+    search_entry = tk.Entry(
+        filter_frame,
+        width=25
+    )
+
+    search_entry.grid(
+        row=0,
+        column=1,
+        padx=5
+    )
+
+
+    # Priority label
+    priority_label = tk.Label(
+        filter_frame,
+        text="Priority:"
+    )
+
+    priority_label.grid(
+        row=0,
+        column=2,
+        padx=5
+    )
+
+
+    # Priority dropdown
+    priority_filter = ttk.Combobox(
+        filter_frame,
+        values=[
+            "All",
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+        ],
+        state="readonly",
+        width=12
+    )
+
+    priority_filter.set("All")
+
+    priority_filter.grid(
+        row=0,
+        column=3,
+        padx=5
+    )
+
+
+    # ==========================================================
+    # STATISTICS
+    # ==========================================================
 
     stats_frame = tk.Frame(
         dashboard
@@ -254,89 +304,59 @@ def view_reports():
 
     total_label = tk.Label(
         stats_frame,
-        text=f"Total Reports: {total_reports}",
-        font=("Arial", 13, "bold")
+        text="Total Reports: 0",
+        font=("Arial", 12, "bold")
     )
 
     total_label.grid(
         row=0,
         column=0,
-        padx=25
+        padx=20
     )
 
 
     high_label = tk.Label(
         stats_frame,
-        text=f"🔴 HIGH: {high_reports}",
-        font=("Arial", 13, "bold")
+        text="🔴 HIGH: 0",
+        font=("Arial", 12, "bold")
     )
 
     high_label.grid(
         row=0,
         column=1,
-        padx=25
+        padx=20
     )
 
 
     medium_label = tk.Label(
         stats_frame,
-        text=f"🟠 MEDIUM: {medium_reports}",
-        font=("Arial", 13, "bold")
+        text="🟠 MEDIUM: 0",
+        font=("Arial", 12, "bold")
     )
 
     medium_label.grid(
         row=0,
         column=2,
-        padx=25
+        padx=20
     )
 
 
     low_label = tk.Label(
         stats_frame,
-        text=f"🟢 LOW: {low_reports}",
-        font=("Arial", 13, "bold")
+        text="🟢 LOW: 0",
+        font=("Arial", 12, "bold")
     )
 
     low_label.grid(
         row=0,
         column=3,
-        padx=25
+        padx=20
     )
 
 
-    # ==============================
-    # NO REPORTS CHECK
-    # ==============================
-
-    if len(reports) == 0:
-
-        empty_label = tk.Label(
-            dashboard,
-            text="No reports available.",
-            font=("Arial", 14)
-        )
-
-        empty_label.pack(
-            pady=50
-        )
-
-        return
-
-
-    # ==============================
-    # SORT REPORTS
-    # ==============================
-
-    sorted_reports = sorted(
-        reports,
-        key=lambda report: report["priority_score"],
-        reverse=True
-    )
-
-
-    # ==============================
+    # ==========================================================
     # TABLE
-    # ==============================
+    # ==========================================================
 
     columns = (
         "ID",
@@ -356,10 +376,7 @@ def view_reports():
     )
 
 
-    # ==============================
-    # HEADINGS
-    # ==============================
-
+    # Headings
     table.heading(
         "ID",
         text="Report ID"
@@ -391,10 +408,7 @@ def view_reports():
     )
 
 
-    # ==============================
-    # COLUMN WIDTHS
-    # ==============================
-
+    # Column widths
     table.column(
         "ID",
         width=100
@@ -402,7 +416,7 @@ def view_reports():
 
     table.column(
         "Location",
-        width=220
+        width=250
     )
 
     table.column(
@@ -446,42 +460,205 @@ def view_reports():
     )
 
 
-    # ==============================
-    # ADD REPORTS
-    # ==============================
+    # ==========================================================
+    # UPDATE TABLE FUNCTION
+    # ==========================================================
 
-    for report in sorted_reports:
+    def update_table():
 
-        priority_text = report["priority"]
+        # Remove existing rows
+        for item in table.get_children():
 
-
-        if priority_text.startswith("HIGH"):
-
-            tag = "high"
-
-        elif priority_text.startswith("MEDIUM"):
-
-            tag = "medium"
-
-        else:
-
-            tag = "low"
+            table.delete(item)
 
 
-        table.insert(
-            "",
-            tk.END,
-            values=(
-                report["report_id"],
-                report["location"],
-                report["waste_type"].capitalize(),
-                report["severity"].capitalize(),
-                report["priority_score"],
-                report["priority"]
-            ),
-            tags=(tag,)
+        # Get search text
+        search_text = search_entry.get().strip().lower()
+
+
+        # Get selected priority
+        selected_priority = priority_filter.get()
+
+
+        # Filter reports
+        filtered_reports = []
+
+
+        for report in reports:
+
+            # Location search
+            location_matches = (
+                search_text in report["location"].lower()
+            )
+
+
+            # Priority filter
+            if selected_priority == "All":
+
+                priority_matches = True
+
+            else:
+
+                priority_matches = report[
+                    "priority"
+                ].startswith(
+                    selected_priority
+                )
+
+
+            # Add matching report
+            if (
+                location_matches
+                and priority_matches
+            ):
+
+                filtered_reports.append(
+                    report
+                )
+
+
+        # Sort by priority score
+        filtered_reports.sort(
+            key=lambda report: report["priority_score"],
+            reverse=True
         )
 
+
+        # ==============================
+        # UPDATE STATISTICS
+        # ==============================
+
+        total_reports = len(
+            filtered_reports
+        )
+
+        high_reports = 0
+
+        medium_reports = 0
+
+        low_reports = 0
+
+
+        for report in filtered_reports:
+
+            if report["priority"].startswith("HIGH"):
+
+                high_reports += 1
+
+            elif report["priority"].startswith("MEDIUM"):
+
+                medium_reports += 1
+
+            elif report["priority"].startswith("LOW"):
+
+                low_reports += 1
+
+
+        total_label.config(
+            text=f"Total Reports: {total_reports}"
+        )
+
+        high_label.config(
+            text=f"🔴 HIGH: {high_reports}"
+        )
+
+        medium_label.config(
+            text=f"🟠 MEDIUM: {medium_reports}"
+        )
+
+        low_label.config(
+            text=f"🟢 LOW: {low_reports}"
+        )
+
+
+        # ==============================
+        # ADD FILTERED REPORTS
+        # ==============================
+
+        for report in filtered_reports:
+
+            priority_text = report["priority"]
+
+
+            if priority_text.startswith("HIGH"):
+
+                tag = "high"
+
+            elif priority_text.startswith("MEDIUM"):
+
+                tag = "medium"
+
+            else:
+
+                tag = "low"
+
+
+            table.insert(
+                "",
+                tk.END,
+                values=(
+                    report["report_id"],
+                    report["location"],
+                    report["waste_type"].capitalize(),
+                    report["severity"].capitalize(),
+                    report["priority_score"],
+                    report["priority"]
+                ),
+                tags=(tag,)
+            )
+
+
+    # ==========================================================
+    # SEARCH BUTTON
+    # ==========================================================
+
+    search_button = tk.Button(
+        filter_frame,
+        text="🔎 Search",
+        command=update_table
+    )
+
+    search_button.grid(
+        row=0,
+        column=4,
+        padx=5
+    )
+
+
+    # ==========================================================
+    # SHOW ALL BUTTON
+    # ==========================================================
+
+    def show_all():
+
+        search_entry.delete(
+            0,
+            tk.END
+        )
+
+        priority_filter.set(
+            "All"
+        )
+
+        update_table()
+
+
+    show_all_button = tk.Button(
+        filter_frame,
+        text="Show All",
+        command=show_all
+    )
+
+    show_all_button.grid(
+        row=0,
+        column=5,
+        padx=5
+    )
+
+
+    # ==========================================================
+    # DISPLAY TABLE
+    # ==========================================================
 
     table.pack(
         padx=20,
@@ -491,9 +668,13 @@ def view_reports():
     )
 
 
-# ==============================
+    # Load initial reports
+    update_table()
+
+
+# ==========================================================
 # SUBMIT REPORT FUNCTION
-# ==============================
+# ==========================================================
 
 def submit_report():
 
@@ -626,7 +807,9 @@ def submit_report():
     }
 
 
-    reports.append(report)
+    reports.append(
+        report
+    )
 
 
     # ==============================
@@ -643,9 +826,9 @@ def submit_report():
     )
 
 
-# ==============================
+# ==========================================================
 # SUBMIT BUTTON
-# ==============================
+# ==========================================================
 
 submit_button = tk.Button(
     window,
@@ -655,12 +838,14 @@ submit_button = tk.Button(
     width=20
 )
 
-submit_button.pack(pady=20)
+submit_button.pack(
+    pady=20
+)
 
 
-# ==============================
+# ==========================================================
 # VIEW REPORTS BUTTON
-# ==============================
+# ==========================================================
 
 dashboard_button = tk.Button(
     window,
@@ -670,12 +855,14 @@ dashboard_button = tk.Button(
     width=20
 )
 
-dashboard_button.pack(pady=5)
+dashboard_button.pack(
+    pady=5
+)
 
 
-# ==============================
+# ==========================================================
 # RESULT
-# ==============================
+# ==========================================================
 
 result_label = tk.Label(
     window,
@@ -683,11 +870,13 @@ result_label = tk.Label(
     font=("Arial", 14, "bold")
 )
 
-result_label.pack(pady=15)
+result_label.pack(
+    pady=15
+)
 
 
-# ==============================
+# ==========================================================
 # RUN APPLICATION
-# ==============================
+# ==========================================================
 
 window.mainloop()
