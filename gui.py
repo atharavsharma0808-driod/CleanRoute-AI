@@ -20,7 +20,7 @@ window = tk.Tk()
 
 window.title("CleanRoute AI")
 
-window.geometry("600x750")
+window.geometry("600x800")
 
 window.resizable(False, False)
 
@@ -42,10 +42,12 @@ def load_reports():
         return []
 
     try:
+
         with open(DATA_FILE, "r") as file:
             return json.load(file)
 
     except (json.JSONDecodeError, OSError):
+
         return []
 
 
@@ -220,6 +222,239 @@ repeat_dropdown = ttk.Combobox(
 )
 
 repeat_dropdown.pack()
+
+
+# ==========================================================
+# COLLECTION QUEUE
+# ==========================================================
+
+def collection_queue():
+
+    queue_window = tk.Toplevel(window)
+
+    queue_window.title(
+        "CleanRoute AI - Collection Queue"
+    )
+
+    queue_window.geometry(
+        "850x550"
+    )
+
+
+    # ==============================
+    # TITLE
+    # ==============================
+
+    queue_title = tk.Label(
+        queue_window,
+        text="🚛 Collection Queue",
+        font=("Arial", 22, "bold")
+    )
+
+    queue_title.pack(
+        pady=15
+    )
+
+
+    description_label = tk.Label(
+        queue_window,
+        text="Recommended collection order based on priority score",
+        font=("Arial", 11)
+    )
+
+    description_label.pack(
+        pady=(0, 15)
+    )
+
+
+    # ==============================
+    # NO REPORTS
+    # ==============================
+
+    if len(reports) == 0:
+
+        empty_label = tk.Label(
+            queue_window,
+            text="No reports available.",
+            font=("Arial", 14)
+        )
+
+        empty_label.pack(
+            pady=50
+        )
+
+        return
+
+
+    # ==============================
+    # SORT REPORTS
+    # ==============================
+
+    queue = sorted(
+        reports,
+        key=lambda report: report["priority_score"],
+        reverse=True
+    )
+
+
+    # ==============================
+    # TABLE
+    # ==============================
+
+    columns = (
+        "Order",
+        "ID",
+        "Location",
+        "Waste",
+        "Score",
+        "Priority"
+    )
+
+
+    table = ttk.Treeview(
+        queue_window,
+        columns=columns,
+        show="headings",
+        height=15
+    )
+
+
+    # ==============================
+    # HEADINGS
+    # ==============================
+
+    table.heading(
+        "Order",
+        text="Order"
+    )
+
+    table.heading(
+        "ID",
+        text="Report ID"
+    )
+
+    table.heading(
+        "Location",
+        text="Location"
+    )
+
+    table.heading(
+        "Waste",
+        text="Waste Type"
+    )
+
+    table.heading(
+        "Score",
+        text="Score"
+    )
+
+    table.heading(
+        "Priority",
+        text="Priority"
+    )
+
+
+    # ==============================
+    # COLUMN WIDTHS
+    # ==============================
+
+    table.column(
+        "Order",
+        width=70
+    )
+
+    table.column(
+        "ID",
+        width=100
+    )
+
+    table.column(
+        "Location",
+        width=250
+    )
+
+    table.column(
+        "Waste",
+        width=120
+    )
+
+    table.column(
+        "Score",
+        width=80
+    )
+
+    table.column(
+        "Priority",
+        width=130
+    )
+
+
+    # ==============================
+    # COLORS
+    # ==============================
+
+    table.tag_configure(
+        "high",
+        background="#ffcccc"
+    )
+
+    table.tag_configure(
+        "medium",
+        background="#ffe5b4"
+    )
+
+    table.tag_configure(
+        "low",
+        background="#ccffcc"
+    )
+
+
+    # ==============================
+    # ADD REPORTS
+    # ==============================
+
+    for index, report in enumerate(
+        queue,
+        start=1
+    ):
+
+        priority_text = report["priority"]
+
+
+        if priority_text.startswith("HIGH"):
+
+            tag = "high"
+
+        elif priority_text.startswith("MEDIUM"):
+
+            tag = "medium"
+
+        else:
+
+            tag = "low"
+
+
+        table.insert(
+            "",
+            tk.END,
+            values=(
+                index,
+                report["report_id"],
+                report["location"],
+                report["waste_type"].capitalize(),
+                report["priority_score"],
+                report["priority"]
+            ),
+            tags=(tag,)
+        )
+
+
+    table.pack(
+        padx=20,
+        pady=10,
+        fill="both",
+        expand=True
+    )
 
 
 # ==========================================================
@@ -499,7 +734,6 @@ def view_reports():
 
     def update_table():
 
-        # Remove old rows
         for item in table.get_children():
 
             table.delete(item)
@@ -552,7 +786,6 @@ def view_reports():
                 )
 
 
-        # Sort by score
         filtered_reports.sort(
             key=lambda report: report["priority_score"],
             reverse=True
@@ -659,7 +892,7 @@ def view_reports():
 
 
     # ==============================
-    # SHOW ALL
+    # SHOW ALL BUTTON
     # ==============================
 
     def show_all():
@@ -701,7 +934,6 @@ def view_reports():
     )
 
 
-    # Load reports immediately
     update_table()
 
 
@@ -757,11 +989,9 @@ def submit_report():
         severity
     )
 
-
     location_score = calculate_location_score(
         location_type
     )
-
 
     waste_score = calculate_waste_score(
         waste_type
@@ -839,14 +1069,13 @@ def submit_report():
     }
 
 
-    # Add report
     reports.append(
         report
     )
 
 
     # ==============================
-    # SAVE TO JSON
+    # SAVE REPORT
     # ==============================
 
     save_reports()
@@ -896,6 +1125,23 @@ dashboard_button = tk.Button(
 )
 
 dashboard_button.pack(
+    pady=5
+)
+
+
+# ==========================================================
+# COLLECTION QUEUE BUTTON
+# ==========================================================
+
+queue_button = tk.Button(
+    window,
+    text="🚛 COLLECTION QUEUE",
+    command=collection_queue,
+    font=("Arial", 11, "bold"),
+    width=20
+)
+
+queue_button.pack(
     pady=5
 )
 
