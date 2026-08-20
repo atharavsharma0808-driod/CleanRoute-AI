@@ -3,6 +3,7 @@ from tkinter import ttk
 from datetime import datetime
 import json
 import os
+import math
 
 from main import (
     calculate_priority,
@@ -12,29 +13,29 @@ from main import (
 )
 
 
-# ==============================
-# CREATE MAIN WINDOW
-# ==============================
+# ==========================================================
+# MAIN WINDOW
+# ==========================================================
 
 window = tk.Tk()
 
 window.title("CleanRoute AI")
 
-window.geometry("600x800")
+window.geometry("620x720")
 
-window.resizable(False, False)
+window.minsize(500, 500)
 
 
-# ==============================
+# ==========================================================
 # DATA FILE
-# ==============================
+# ==========================================================
 
 DATA_FILE = "reports.json"
 
 
-# ==============================
+# ==========================================================
 # LOAD REPORTS
-# ==============================
+# ==========================================================
 
 def load_reports():
 
@@ -42,26 +43,23 @@ def load_reports():
         return []
 
     try:
-
         with open(DATA_FILE, "r") as file:
             return json.load(file)
 
     except (json.JSONDecodeError, OSError):
-
         return []
 
 
 reports = load_reports()
 
 
-# ==============================
+# ==========================================================
 # SAVE REPORTS
-# ==============================
+# ==========================================================
 
 def save_reports():
 
     with open(DATA_FILE, "w") as file:
-
         json.dump(
             reports,
             file,
@@ -69,43 +67,157 @@ def save_reports():
         )
 
 
-# ==============================
+# ==========================================================
+# DISTANCE CALCULATION
+# ==========================================================
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+
+    earth_radius = 6371
+
+    lat1 = math.radians(lat1)
+    lon1 = math.radians(lon1)
+
+    lat2 = math.radians(lat2)
+    lon2 = math.radians(lon2)
+
+    delta_lat = lat2 - lat1
+    delta_lon = lon2 - lon1
+
+    a = (
+        math.sin(delta_lat / 2) ** 2
+        + math.cos(lat1)
+        * math.cos(lat2)
+        * math.sin(delta_lon / 2) ** 2
+    )
+
+    c = 2 * math.atan2(
+        math.sqrt(a),
+        math.sqrt(1 - a)
+    )
+
+    return earth_radius * c
+
+
+# ==========================================================
+# SCROLLABLE MAIN AREA
+# ==========================================================
+
+container = tk.Frame(window)
+
+container.pack(
+    fill="both",
+    expand=True
+)
+
+
+canvas = tk.Canvas(
+    container
+)
+
+scrollbar = ttk.Scrollbar(
+    container,
+    orient="vertical",
+    command=canvas.yview
+)
+
+
+scrollable_frame = tk.Frame(
+    canvas
+)
+
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda event: canvas.configure(
+        scrollregion=canvas.bbox("all")
+    )
+)
+
+
+canvas_window = canvas.create_window(
+    (0, 0),
+    window=scrollable_frame,
+    anchor="nw"
+)
+
+
+canvas.configure(
+    yscrollcommand=scrollbar.set
+)
+
+
+canvas.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+scrollbar.pack(
+    side="right",
+    fill="y"
+)
+
+
+# ==========================================================
+# MOUSE WHEEL
+# ==========================================================
+
+def scroll(event):
+
+    canvas.yview_scroll(
+        int(-1 * (event.delta / 120)),
+        "units"
+    )
+
+
+canvas.bind_all(
+    "<MouseWheel>",
+    scroll
+)
+
+
+# ==========================================================
 # TITLE
-# ==============================
+# ==========================================================
 
 title = tk.Label(
-    window,
+    scrollable_frame,
     text="🗑️ CleanRoute AI",
     font=("Arial", 24, "bold")
 )
 
-title.pack(pady=25)
+title.pack(
+    pady=(20, 5)
+)
 
 
 description = tk.Label(
-    window,
+    scrollable_frame,
     text="Smart Garbage Priority & Route Management",
     font=("Arial", 12)
 )
 
-description.pack()
-
-
-# ==============================
-# LOCATION
-# ==============================
-
-location_label = tk.Label(
-    window,
-    text="Garbage Location",
-    font=("Arial", 12)
+description.pack(
+    pady=(0, 15)
 )
 
-location_label.pack(pady=(25, 5))
+
+# ==========================================================
+# LOCATION
+# ==========================================================
+
+tk.Label(
+    scrollable_frame,
+    text="Garbage Location",
+    font=("Arial", 12)
+).pack(
+    pady=(5, 3)
+)
 
 
 location_entry = tk.Entry(
-    window,
+    scrollable_frame,
     width=40,
     font=("Arial", 12)
 )
@@ -113,21 +225,65 @@ location_entry = tk.Entry(
 location_entry.pack()
 
 
-# ==============================
-# WASTE TYPE
-# ==============================
+# ==========================================================
+# LATITUDE
+# ==========================================================
 
-waste_label = tk.Label(
-    window,
-    text="Waste Type",
+tk.Label(
+    scrollable_frame,
+    text="Latitude",
+    font=("Arial", 12)
+).pack(
+    pady=(8, 3)
+)
+
+
+latitude_entry = tk.Entry(
+    scrollable_frame,
+    width=40,
     font=("Arial", 12)
 )
 
-waste_label.pack(pady=(15, 5))
+latitude_entry.pack()
+
+
+# ==========================================================
+# LONGITUDE
+# ==========================================================
+
+tk.Label(
+    scrollable_frame,
+    text="Longitude",
+    font=("Arial", 12)
+).pack(
+    pady=(8, 3)
+)
+
+
+longitude_entry = tk.Entry(
+    scrollable_frame,
+    width=40,
+    font=("Arial", 12)
+)
+
+longitude_entry.pack()
+
+
+# ==========================================================
+# WASTE TYPE
+# ==========================================================
+
+tk.Label(
+    scrollable_frame,
+    text="Waste Type",
+    font=("Arial", 12)
+).pack(
+    pady=(8, 3)
+)
 
 
 waste_dropdown = ttk.Combobox(
-    window,
+    scrollable_frame,
     values=[
         "Medical",
         "Hazardous",
@@ -142,21 +298,21 @@ waste_dropdown = ttk.Combobox(
 waste_dropdown.pack()
 
 
-# ==============================
+# ==========================================================
 # SEVERITY
-# ==============================
+# ==========================================================
 
-severity_label = tk.Label(
-    window,
+tk.Label(
+    scrollable_frame,
     text="Severity",
     font=("Arial", 12)
+).pack(
+    pady=(8, 3)
 )
-
-severity_label.pack(pady=(15, 5))
 
 
 severity_dropdown = ttk.Combobox(
-    window,
+    scrollable_frame,
     values=[
         "Low",
         "Medium",
@@ -169,21 +325,21 @@ severity_dropdown = ttk.Combobox(
 severity_dropdown.pack()
 
 
-# ==============================
+# ==========================================================
 # LOCATION TYPE
-# ==============================
+# ==========================================================
 
-location_type_label = tk.Label(
-    window,
+tk.Label(
+    scrollable_frame,
     text="Location Type",
     font=("Arial", 12)
+).pack(
+    pady=(8, 3)
 )
-
-location_type_label.pack(pady=(15, 5))
 
 
 location_type_dropdown = ttk.Combobox(
-    window,
+    scrollable_frame,
     values=[
         "Hospital",
         "School",
@@ -198,21 +354,21 @@ location_type_dropdown = ttk.Combobox(
 location_type_dropdown.pack()
 
 
-# ==============================
+# ==========================================================
 # PREVIOUSLY REPORTED
-# ==============================
+# ==========================================================
 
-repeat_label = tk.Label(
-    window,
+tk.Label(
+    scrollable_frame,
     text="Previously Reported?",
     font=("Arial", 12)
+).pack(
+    pady=(8, 3)
 )
-
-repeat_label.pack(pady=(15, 5))
 
 
 repeat_dropdown = ttk.Combobox(
-    window,
+    scrollable_frame,
     values=[
         "Yes",
         "No"
@@ -222,6 +378,204 @@ repeat_dropdown = ttk.Combobox(
 )
 
 repeat_dropdown.pack()
+
+
+# ==========================================================
+# RESULT LABEL
+# ==========================================================
+
+result_label = tk.Label(
+    scrollable_frame,
+    text="",
+    font=("Arial", 12, "bold")
+)
+
+result_label.pack(
+    pady=10
+)
+
+
+# ==========================================================
+# SUBMIT REPORT
+# ==========================================================
+
+def submit_report():
+
+    location = location_entry.get().strip()
+
+    latitude_text = latitude_entry.get().strip()
+
+    longitude_text = longitude_entry.get().strip()
+
+    waste_type = waste_dropdown.get().lower()
+
+    severity = severity_dropdown.get().lower()
+
+    location_type = location_type_dropdown.get().lower()
+
+    repeat_report = repeat_dropdown.get().lower()
+
+
+    if location == "":
+
+        result_label.config(
+            text="⚠️ Please enter a garbage location."
+        )
+
+        return
+
+
+    if (
+        waste_type == ""
+        or severity == ""
+        or location_type == ""
+        or repeat_report == ""
+    ):
+
+        result_label.config(
+            text="⚠️ Please complete all fields."
+        )
+
+        return
+
+
+    try:
+
+        latitude = float(latitude_text)
+
+        longitude = float(longitude_text)
+
+    except ValueError:
+
+        result_label.config(
+            text="⚠️ Latitude and longitude must be numbers."
+        )
+
+        return
+
+
+    if latitude < -90 or latitude > 90:
+
+        result_label.config(
+            text="⚠️ Latitude must be between -90 and 90."
+        )
+
+        return
+
+
+    if longitude < -180 or longitude > 180:
+
+        result_label.config(
+            text="⚠️ Longitude must be between -180 and 180."
+        )
+
+        return
+
+
+    # ======================================================
+    # SCORE
+    # ======================================================
+
+    severity_score = calculate_priority(
+        severity
+    )
+
+    location_score = calculate_location_score(
+        location_type
+    )
+
+    waste_score = calculate_waste_score(
+        waste_type
+    )
+
+
+    if repeat_report == "yes":
+        repeat_score = 15
+    else:
+        repeat_score = 0
+
+
+    priority_score = (
+        severity_score
+        + location_score
+        + waste_score
+        + repeat_score
+    )
+
+
+    if priority_score > 100:
+        priority_score = 100
+
+
+    priority = get_priority_level(
+        priority_score
+    )
+
+
+    # ======================================================
+    # REPORT ID
+    # ======================================================
+
+    report_id = (
+        f"CR-{len(reports) + 1:03d}"
+    )
+
+
+    # ======================================================
+    # TIMESTAMP
+    # ======================================================
+
+    timestamp = datetime.now().strftime(
+        "%d-%m-%Y %I:%M %p"
+    )
+
+
+    # ======================================================
+    # REPORT
+    # ======================================================
+
+    report = {
+
+        "report_id": report_id,
+
+        "timestamp": timestamp,
+
+        "location": location,
+
+        "latitude": latitude,
+
+        "longitude": longitude,
+
+        "waste_type": waste_type,
+
+        "severity": severity,
+
+        "location_type": location_type,
+
+        "repeat_report": repeat_report,
+
+        "priority_score": priority_score,
+
+        "priority": priority
+    }
+
+
+    reports.append(
+        report
+    )
+
+
+    save_reports()
+
+
+    result_label.config(
+        text=(
+            f"✅ Report submitted!\n"
+            f"ID: {report_id}\n"
+            f"Priority Score: {priority_score}\n"
+            f"Priority: {priority}"
+        )
+    )
 
 
 # ==========================================================
@@ -241,54 +595,27 @@ def collection_queue():
     )
 
 
-    # ==============================
-    # TITLE
-    # ==============================
-
-    queue_title = tk.Label(
+    tk.Label(
         queue_window,
         text="🚛 Collection Queue",
         font=("Arial", 22, "bold")
-    )
-
-    queue_title.pack(
+    ).pack(
         pady=15
     )
 
 
-    description_label = tk.Label(
-        queue_window,
-        text="Recommended collection order based on priority score",
-        font=("Arial", 11)
-    )
+    if not reports:
 
-    description_label.pack(
-        pady=(0, 15)
-    )
-
-
-    # ==============================
-    # NO REPORTS
-    # ==============================
-
-    if len(reports) == 0:
-
-        empty_label = tk.Label(
+        tk.Label(
             queue_window,
             text="No reports available.",
             font=("Arial", 14)
-        )
-
-        empty_label.pack(
+        ).pack(
             pady=50
         )
 
         return
 
-
-    # ==============================
-    # SORT REPORTS
-    # ==============================
 
     queue = sorted(
         reports,
@@ -296,10 +623,6 @@ def collection_queue():
         reverse=True
     )
 
-
-    # ==============================
-    # TABLE
-    # ==============================
 
     columns = (
         "Order",
@@ -314,49 +637,17 @@ def collection_queue():
     table = ttk.Treeview(
         queue_window,
         columns=columns,
-        show="headings",
-        height=15
+        show="headings"
     )
 
 
-    # ==============================
-    # HEADINGS
-    # ==============================
+    for column in columns:
 
-    table.heading(
-        "Order",
-        text="Order"
-    )
+        table.heading(
+            column,
+            text=column
+        )
 
-    table.heading(
-        "ID",
-        text="Report ID"
-    )
-
-    table.heading(
-        "Location",
-        text="Location"
-    )
-
-    table.heading(
-        "Waste",
-        text="Waste Type"
-    )
-
-    table.heading(
-        "Score",
-        text="Score"
-    )
-
-    table.heading(
-        "Priority",
-        text="Priority"
-    )
-
-
-    # ==============================
-    # COLUMN WIDTHS
-    # ==============================
 
     table.column(
         "Order",
@@ -389,9 +680,241 @@ def collection_queue():
     )
 
 
-    # ==============================
-    # COLORS
-    # ==============================
+    table.tag_configure(
+        "high",
+        background="#ffcccc"
+    )
+
+    table.tag_configure(
+        "medium",
+        background="#ffe5b4"
+    )
+
+    table.tag_configure(
+        "low",
+        background="#ccffcc"
+    )
+
+
+    for index, report in enumerate(
+        queue,
+        start=1
+    ):
+
+        priority = report["priority"]
+
+
+        if priority.startswith("HIGH"):
+            tag = "high"
+
+        elif priority.startswith("MEDIUM"):
+            tag = "medium"
+
+        else:
+            tag = "low"
+
+
+        table.insert(
+            "",
+            tk.END,
+            values=(
+                index,
+                report["report_id"],
+                report["location"],
+                report["waste_type"].capitalize(),
+                report["priority_score"],
+                priority
+            ),
+            tags=(tag,)
+        )
+
+
+    table.pack(
+        padx=20,
+        pady=15,
+        fill="both",
+        expand=True
+    )
+
+
+# ==========================================================
+# OPTIMIZED ROUTE
+# ==========================================================
+
+def optimized_route():
+
+    route_window = tk.Toplevel(window)
+
+    route_window.title(
+        "CleanRoute AI - Optimized Route"
+    )
+
+    route_window.geometry(
+        "850x600"
+    )
+
+
+    tk.Label(
+        route_window,
+        text="🗺️ Optimized Collection Route",
+        font=("Arial", 22, "bold")
+    ).pack(
+        pady=15
+    )
+
+
+    # Only reports with coordinates
+    valid_reports = []
+
+    for report in reports:
+
+        if (
+            "latitude" in report
+            and "longitude" in report
+        ):
+
+            valid_reports.append(report)
+
+
+    if not valid_reports:
+
+        tk.Label(
+            route_window,
+            text=(
+                "⚠️ No reports with coordinates found.\n\n"
+                "Create a new report with latitude "
+                "and longitude first."
+            ),
+            font=("Arial", 13)
+        ).pack(
+            pady=80
+        )
+
+        return
+
+
+    # Highest priority first
+    valid_reports.sort(
+        key=lambda report: report["priority_score"],
+        reverse=True
+    )
+
+
+    current = valid_reports[0]
+
+    remaining = valid_reports[1:]
+
+    route = [current]
+
+    total_distance = 0
+
+
+    # ======================================================
+    # NEAREST NEIGHBOR ALGORITHM
+    # ======================================================
+
+    while remaining:
+
+        nearest_report = None
+
+        nearest_distance = float("inf")
+
+
+        for report in remaining:
+
+            distance = calculate_distance(
+
+                float(current["latitude"]),
+
+                float(current["longitude"]),
+
+                float(report["latitude"]),
+
+                float(report["longitude"])
+
+            )
+
+
+            if distance < nearest_distance:
+
+                nearest_distance = distance
+
+                nearest_report = report
+
+
+        route.append(
+            nearest_report
+        )
+
+        total_distance += nearest_distance
+
+        current = nearest_report
+
+        remaining.remove(
+            nearest_report
+        )
+
+
+    # ======================================================
+    # ROUTE TABLE
+    # ======================================================
+
+    columns = (
+        "Stop",
+        "ID",
+        "Location",
+        "Priority",
+        "Score",
+        "Distance"
+    )
+
+
+    table = ttk.Treeview(
+        route_window,
+        columns=columns,
+        show="headings",
+        height=16
+    )
+
+
+    for column in columns:
+
+        table.heading(
+            column,
+            text=column
+        )
+
+
+    table.column(
+        "Stop",
+        width=70
+    )
+
+    table.column(
+        "ID",
+        width=100
+    )
+
+    table.column(
+        "Location",
+        width=250
+    )
+
+    table.column(
+        "Priority",
+        width=130
+    )
+
+    table.column(
+        "Score",
+        width=80
+    )
+
+    table.column(
+        "Distance",
+        width=100
+    )
+
 
     table.tag_configure(
         "high",
@@ -409,28 +932,47 @@ def collection_queue():
     )
 
 
-    # ==============================
-    # ADD REPORTS
-    # ==============================
+    previous = None
+
 
     for index, report in enumerate(
-        queue,
+        route,
         start=1
     ):
 
-        priority_text = report["priority"]
+        distance_text = "START"
 
 
-        if priority_text.startswith("HIGH"):
+        if previous is not None:
 
+            distance = calculate_distance(
+
+                float(previous["latitude"]),
+
+                float(previous["longitude"]),
+
+                float(report["latitude"]),
+
+                float(report["longitude"])
+
+            )
+
+
+            distance_text = (
+                f"{distance:.2f} km"
+            )
+
+
+        priority = report["priority"]
+
+
+        if priority.startswith("HIGH"):
             tag = "high"
 
-        elif priority_text.startswith("MEDIUM"):
-
+        elif priority.startswith("MEDIUM"):
             tag = "medium"
 
         else:
-
             tag = "low"
 
 
@@ -441,24 +983,39 @@ def collection_queue():
                 index,
                 report["report_id"],
                 report["location"],
-                report["waste_type"].capitalize(),
+                priority,
                 report["priority_score"],
-                report["priority"]
+                distance_text
             ),
             tags=(tag,)
         )
 
 
+        previous = report
+
+
     table.pack(
         padx=20,
-        pady=10,
+        pady=15,
         fill="both",
         expand=True
     )
 
 
+    tk.Label(
+        route_window,
+        text=(
+            f"🚛 Estimated route distance: "
+            f"{total_distance:.2f} km"
+        ),
+        font=("Arial", 14, "bold")
+    ).pack(
+        pady=15
+    )
+
+
 # ==========================================================
-# VIEW REPORT DASHBOARD
+# VIEW REPORTS
 # ==========================================================
 
 def view_reports():
@@ -474,159 +1031,14 @@ def view_reports():
     )
 
 
-    # ==============================
-    # TITLE
-    # ==============================
-
-    dashboard_title = tk.Label(
+    tk.Label(
         dashboard,
         text="📊 Report Dashboard",
         font=("Arial", 20, "bold")
+    ).pack(
+        pady=15
     )
 
-    dashboard_title.pack(
-        pady=(15, 5)
-    )
-
-
-    # ==============================
-    # SEARCH FRAME
-    # ==============================
-
-    filter_frame = tk.Frame(
-        dashboard
-    )
-
-    filter_frame.pack(
-        pady=10
-    )
-
-
-    search_label = tk.Label(
-        filter_frame,
-        text="Search Location:"
-    )
-
-    search_label.grid(
-        row=0,
-        column=0,
-        padx=5
-    )
-
-
-    search_entry = tk.Entry(
-        filter_frame,
-        width=25
-    )
-
-    search_entry.grid(
-        row=0,
-        column=1,
-        padx=5
-    )
-
-
-    priority_label = tk.Label(
-        filter_frame,
-        text="Priority:"
-    )
-
-    priority_label.grid(
-        row=0,
-        column=2,
-        padx=5
-    )
-
-
-    priority_filter = ttk.Combobox(
-        filter_frame,
-        values=[
-            "All",
-            "HIGH",
-            "MEDIUM",
-            "LOW"
-        ],
-        state="readonly",
-        width=12
-    )
-
-    priority_filter.set("All")
-
-    priority_filter.grid(
-        row=0,
-        column=3,
-        padx=5
-    )
-
-
-    # ==============================
-    # STATISTICS
-    # ==============================
-
-    stats_frame = tk.Frame(
-        dashboard
-    )
-
-    stats_frame.pack(
-        pady=10
-    )
-
-
-    total_label = tk.Label(
-        stats_frame,
-        text="Total Reports: 0",
-        font=("Arial", 12, "bold")
-    )
-
-    total_label.grid(
-        row=0,
-        column=0,
-        padx=20
-    )
-
-
-    high_label = tk.Label(
-        stats_frame,
-        text="🔴 HIGH: 0",
-        font=("Arial", 12, "bold")
-    )
-
-    high_label.grid(
-        row=0,
-        column=1,
-        padx=20
-    )
-
-
-    medium_label = tk.Label(
-        stats_frame,
-        text="🟠 MEDIUM: 0",
-        font=("Arial", 12, "bold")
-    )
-
-    medium_label.grid(
-        row=0,
-        column=2,
-        padx=20
-    )
-
-
-    low_label = tk.Label(
-        stats_frame,
-        text="🟢 LOW: 0",
-        font=("Arial", 12, "bold")
-    )
-
-    low_label.grid(
-        row=0,
-        column=3,
-        padx=20
-    )
-
-
-    # ==============================
-    # TABLE
-    # ==============================
 
     columns = (
         "ID",
@@ -641,76 +1053,25 @@ def view_reports():
     table = ttk.Treeview(
         dashboard,
         columns=columns,
-        show="headings",
-        height=15
+        show="headings"
     )
 
 
-    table.heading(
-        "ID",
-        text="Report ID"
-    )
+    for column in columns:
 
-    table.heading(
-        "Location",
-        text="Location"
-    )
-
-    table.heading(
-        "Waste",
-        text="Waste Type"
-    )
-
-    table.heading(
-        "Severity",
-        text="Severity"
-    )
-
-    table.heading(
-        "Score",
-        text="Score"
-    )
-
-    table.heading(
-        "Priority",
-        text="Priority"
-    )
+        table.heading(
+            column,
+            text=column
+        )
 
 
-    table.column(
-        "ID",
-        width=100
-    )
+    table.column("ID", width=100)
+    table.column("Location", width=250)
+    table.column("Waste", width=120)
+    table.column("Severity", width=100)
+    table.column("Score", width=80)
+    table.column("Priority", width=130)
 
-    table.column(
-        "Location",
-        width=250
-    )
-
-    table.column(
-        "Waste",
-        width=120
-    )
-
-    table.column(
-        "Severity",
-        width=100
-    )
-
-    table.column(
-        "Score",
-        width=80
-    )
-
-    table.column(
-        "Priority",
-        width=130
-    )
-
-
-    # ==============================
-    # PRIORITY COLORS
-    # ==============================
 
     table.tag_configure(
         "high",
@@ -728,441 +1089,98 @@ def view_reports():
     )
 
 
-    # ==========================================================
-    # UPDATE TABLE
-    # ==========================================================
+    for report in sorted(
+        reports,
+        key=lambda r: r["priority_score"],
+        reverse=True
+    ):
 
-    def update_table():
-
-        for item in table.get_children():
-
-            table.delete(item)
+        priority = report["priority"]
 
 
-        search_text = (
-            search_entry
-            .get()
-            .strip()
-            .lower()
+        if priority.startswith("HIGH"):
+            tag = "high"
+
+        elif priority.startswith("MEDIUM"):
+            tag = "medium"
+
+        else:
+            tag = "low"
+
+
+        table.insert(
+            "",
+            tk.END,
+            values=(
+                report["report_id"],
+                report["location"],
+                report["waste_type"].capitalize(),
+                report["severity"].capitalize(),
+                report["priority_score"],
+                priority
+            ),
+            tags=(tag,)
         )
 
-
-        selected_priority = (
-            priority_filter.get()
-        )
-
-
-        filtered_reports = []
-
-
-        for report in reports:
-
-            location_matches = (
-                search_text
-                in report["location"].lower()
-            )
-
-
-            if selected_priority == "All":
-
-                priority_matches = True
-
-            else:
-
-                priority_matches = report[
-                    "priority"
-                ].startswith(
-                    selected_priority
-                )
-
-
-            if (
-                location_matches
-                and priority_matches
-            ):
-
-                filtered_reports.append(
-                    report
-                )
-
-
-        filtered_reports.sort(
-            key=lambda report: report["priority_score"],
-            reverse=True
-        )
-
-
-        # ==============================
-        # STATISTICS
-        # ==============================
-
-        total_reports = len(
-            filtered_reports
-        )
-
-        high_reports = 0
-        medium_reports = 0
-        low_reports = 0
-
-
-        for report in filtered_reports:
-
-            if report["priority"].startswith("HIGH"):
-
-                high_reports += 1
-
-            elif report["priority"].startswith("MEDIUM"):
-
-                medium_reports += 1
-
-            elif report["priority"].startswith("LOW"):
-
-                low_reports += 1
-
-
-        total_label.config(
-            text=f"Total Reports: {total_reports}"
-        )
-
-        high_label.config(
-            text=f"🔴 HIGH: {high_reports}"
-        )
-
-        medium_label.config(
-            text=f"🟠 MEDIUM: {medium_reports}"
-        )
-
-        low_label.config(
-            text=f"🟢 LOW: {low_reports}"
-        )
-
-
-        # ==============================
-        # ADD REPORTS
-        # ==============================
-
-        for report in filtered_reports:
-
-            priority_text = report["priority"]
-
-
-            if priority_text.startswith("HIGH"):
-
-                tag = "high"
-
-            elif priority_text.startswith("MEDIUM"):
-
-                tag = "medium"
-
-            else:
-
-                tag = "low"
-
-
-            table.insert(
-                "",
-                tk.END,
-                values=(
-                    report["report_id"],
-                    report["location"],
-                    report["waste_type"].capitalize(),
-                    report["severity"].capitalize(),
-                    report["priority_score"],
-                    report["priority"]
-                ),
-                tags=(tag,)
-            )
-
-
-    # ==============================
-    # SEARCH BUTTON
-    # ==============================
-
-    search_button = tk.Button(
-        filter_frame,
-        text="🔎 Search",
-        command=update_table
-    )
-
-    search_button.grid(
-        row=0,
-        column=4,
-        padx=5
-    )
-
-
-    # ==============================
-    # SHOW ALL BUTTON
-    # ==============================
-
-    def show_all():
-
-        search_entry.delete(
-            0,
-            tk.END
-        )
-
-        priority_filter.set(
-            "All"
-        )
-
-        update_table()
-
-
-    show_all_button = tk.Button(
-        filter_frame,
-        text="Show All",
-        command=show_all
-    )
-
-    show_all_button.grid(
-        row=0,
-        column=5,
-        padx=5
-    )
-
-
-    # ==============================
-    # DISPLAY TABLE
-    # ==============================
 
     table.pack(
         padx=20,
-        pady=10,
+        pady=20,
         fill="both",
         expand=True
     )
 
 
-    update_table()
-
-
 # ==========================================================
-# SUBMIT REPORT
+# BUTTONS
 # ==========================================================
 
-def submit_report():
-
-    location = location_entry.get().strip()
-
-    waste_type = waste_dropdown.get().lower()
-
-    severity = severity_dropdown.get().lower()
-
-    location_type = location_type_dropdown.get().lower()
-
-    repeat_report = repeat_dropdown.get().lower()
-
-
-    # ==============================
-    # VALIDATION
-    # ==============================
-
-    if location == "":
-
-        result_label.config(
-            text="⚠️ Please enter a garbage location."
-        )
-
-        return
-
-
-    if (
-        waste_type == ""
-        or severity == ""
-        or location_type == ""
-        or repeat_report == ""
-    ):
-
-        result_label.config(
-            text="⚠️ Please complete all fields."
-        )
-
-        return
-
-
-    # ==============================
-    # CALCULATE SCORES
-    # ==============================
-
-    severity_score = calculate_priority(
-        severity
-    )
-
-    location_score = calculate_location_score(
-        location_type
-    )
-
-    waste_score = calculate_waste_score(
-        waste_type
-    )
-
-
-    if repeat_report == "yes":
-
-        repeat_score = 15
-
-    else:
-
-        repeat_score = 0
-
-
-    priority_score = (
-        severity_score
-        + location_score
-        + waste_score
-        + repeat_score
-    )
-
-
-    if priority_score > 100:
-
-        priority_score = 100
-
-
-    priority = get_priority_level(
-        priority_score
-    )
-
-
-    # ==============================
-    # REPORT ID
-    # ==============================
-
-    report_id = (
-        f"CR-{len(reports) + 1:03d}"
-    )
-
-
-    # ==============================
-    # TIMESTAMP
-    # ==============================
-
-    timestamp = datetime.now().strftime(
-        "%d-%m-%Y %I:%M %p"
-    )
-
-
-    # ==============================
-    # CREATE REPORT
-    # ==============================
-
-    report = {
-
-        "report_id": report_id,
-
-        "timestamp": timestamp,
-
-        "location": location,
-
-        "waste_type": waste_type,
-
-        "severity": severity,
-
-        "location_type": location_type,
-
-        "repeat_report": repeat_report,
-
-        "priority_score": priority_score,
-
-        "priority": priority
-    }
-
-
-    reports.append(
-        report
-    )
-
-
-    # ==============================
-    # SAVE REPORT
-    # ==============================
-
-    save_reports()
-
-
-    # ==============================
-    # DISPLAY RESULT
-    # ==============================
-
-    result_label.config(
-        text=(
-            f"Report ID: {report_id}\n"
-            f"Reported At: {timestamp}\n\n"
-            f"Priority Score: {priority_score}\n"
-            f"Priority: {priority}"
-        )
-    )
-
-
-# ==========================================================
-# SUBMIT BUTTON
-# ==========================================================
-
-submit_button = tk.Button(
-    window,
+tk.Button(
+    scrollable_frame,
     text="SUBMIT REPORT",
     command=submit_report,
     font=("Arial", 12, "bold"),
-    width=20
+    width=25
+).pack(
+    pady=8
 )
 
-submit_button.pack(
-    pady=20
-)
 
-
-# ==========================================================
-# VIEW REPORTS BUTTON
-# ==========================================================
-
-dashboard_button = tk.Button(
-    window,
+tk.Button(
+    scrollable_frame,
     text="VIEW REPORTS",
     command=view_reports,
     font=("Arial", 11, "bold"),
-    width=20
-)
-
-dashboard_button.pack(
+    width=25
+).pack(
     pady=5
 )
 
 
-# ==========================================================
-# COLLECTION QUEUE BUTTON
-# ==========================================================
-
-queue_button = tk.Button(
-    window,
+tk.Button(
+    scrollable_frame,
     text="🚛 COLLECTION QUEUE",
     command=collection_queue,
     font=("Arial", 11, "bold"),
-    width=20
+    width=25
+).pack(
+    pady=5
 )
 
-queue_button.pack(
+
+tk.Button(
+    scrollable_frame,
+    text="🗺️ OPTIMIZED ROUTE",
+    command=optimized_route,
+    font=("Arial", 11, "bold"),
+    width=25
+).pack(
     pady=5
 )
 
 
 # ==========================================================
-# RESULT
-# ==========================================================
-
-result_label = tk.Label(
-    window,
-    text="",
-    font=("Arial", 14, "bold")
-)
-
-result_label.pack(
-    pady=15
-)
-
-
-# ==========================================================
-# RUN APPLICATION
+# START APPLICATION
 # ==========================================================
 
 window.mainloop()
