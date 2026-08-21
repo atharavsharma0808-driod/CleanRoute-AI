@@ -79,31 +79,24 @@ DARK_GREEN = "#174A2B"
 LIGHT_GREEN = "#E8F5E9"
 TEXT = "#263238"
 MUTED = "#607D8B"
-RED = "#D32F2F"
-ORANGE = "#F57C00"
 
 
 # ==========================================================
-# WINDOW
+# MAIN WINDOW
 # ==========================================================
 
 window = tk.Tk()
-
 window.title("CleanRoute AI")
-
 window.geometry("850x760")
-
 window.minsize(750, 650)
-
 window.configure(bg=BG)
 
 
 # ==========================================================
-# STYLES
+# STYLE
 # ==========================================================
 
 style = ttk.Style()
-
 style.theme_use("clam")
 
 style.configure(
@@ -134,10 +127,7 @@ header = tk.Frame(
     height=105
 )
 
-header.pack(
-    fill="x"
-)
-
+header.pack(fill="x")
 header.pack_propagate(False)
 
 
@@ -171,23 +161,21 @@ tk.Label(
 ).pack(anchor="w")
 
 
-# ONLINE STATUS
-
-status_frame = tk.Frame(
+status = tk.Frame(
     header,
     bg="#245F38",
     padx=12,
     pady=7
 )
 
-status_frame.pack(
+status.pack(
     side="right",
     padx=30
 )
 
 
 tk.Label(
-    status_frame,
+    status,
     text="● SYSTEM ONLINE",
     font=("Arial", 10, "bold"),
     bg="#245F38",
@@ -315,13 +303,12 @@ def stat_card(parent, title, value, icon):
         fg=MUTED
     ).pack(anchor="w")
 
-    return card
-
 
 high_count = sum(
     r.get("priority", "").startswith("HIGH")
     for r in reports
 )
+
 
 stat_card(
     stats,
@@ -383,6 +370,10 @@ tk.Label(
 )
 
 
+report_card.columnconfigure(0, weight=1)
+report_card.columnconfigure(1, weight=1)
+
+
 def add_label(text, row, col):
 
     tk.Label(
@@ -441,11 +432,9 @@ def add_combo(values, row, col):
     return box
 
 
-report_card.columnconfigure(0, weight=1)
-report_card.columnconfigure(1, weight=1)
-
-
-# Location
+# ==========================================================
+# FORM
+# ==========================================================
 
 add_label(
     "Garbage Location",
@@ -459,13 +448,6 @@ location_entry = add_entry(
     65
 )
 
-report_card.grid_columnconfigure(
-    0,
-    weight=1
-)
-
-
-# Coordinates
 
 add_label(
     "Latitude",
@@ -489,8 +471,6 @@ longitude_entry = add_entry(
     1
 )
 
-
-# Waste / severity
 
 add_label(
     "Waste Type",
@@ -526,8 +506,6 @@ severity_dropdown = add_combo(
     1
 )
 
-
-# Location / repeated
 
 add_label(
     "Location Type",
@@ -586,43 +564,25 @@ result_label.grid(
 def submit_report():
 
     location = location_entry.get().strip()
-
     waste_type = waste_dropdown.get().lower()
-
     severity = severity_dropdown.get().lower()
-
     location_type = location_type_dropdown.get().lower()
-
     repeat_report = repeat_dropdown.get().lower()
 
-
     try:
-
-        latitude = float(
-            latitude_entry.get()
-        )
-
-        longitude = float(
-            longitude_entry.get()
-        )
-
+        latitude = float(latitude_entry.get())
+        longitude = float(longitude_entry.get())
     except ValueError:
-
         result_label.config(
             text="⚠️ Enter valid latitude and longitude."
         )
-
         return
 
-
     if not location:
-
         result_label.config(
             text="⚠️ Please enter a garbage location."
         )
-
         return
-
 
     if not all([
         waste_type,
@@ -630,37 +590,24 @@ def submit_report():
         location_type,
         repeat_report
     ]):
-
         result_label.config(
             text="⚠️ Please complete all fields."
         )
-
         return
 
-
     if not -90 <= latitude <= 90:
-
         result_label.config(
             text="⚠️ Latitude must be between -90 and 90."
         )
-
         return
 
-
     if not -180 <= longitude <= 180:
-
         result_label.config(
             text="⚠️ Longitude must be between -180 and 180."
         )
-
         return
 
-
-    repeat_score = (
-        15 if repeat_report == "yes"
-        else 0
-    )
-
+    repeat_score = 15 if repeat_report == "yes" else 0
 
     score = (
         calculate_priority(severity)
@@ -669,55 +616,28 @@ def submit_report():
         + repeat_score
     )
 
-
     score = min(score, 100)
 
     priority = get_priority_level(score)
 
-
     report = {
-
-        "report_id":
-            f"CR-{len(reports) + 1:03d}",
-
-        "timestamp":
-            datetime.now().strftime(
-                "%d-%m-%Y %I:%M %p"
-            ),
-
-        "location":
-            location,
-
-        "latitude":
-            latitude,
-
-        "longitude":
-            longitude,
-
-        "waste_type":
-            waste_type,
-
-        "severity":
-            severity,
-
-        "location_type":
-            location_type,
-
-        "repeat_report":
-            repeat_report,
-
-        "priority_score":
-            score,
-
-        "priority":
-            priority
+        "report_id": f"CR-{len(reports) + 1:03d}",
+        "timestamp": datetime.now().strftime(
+            "%d-%m-%Y %I:%M %p"
+        ),
+        "location": location,
+        "latitude": latitude,
+        "longitude": longitude,
+        "waste_type": waste_type,
+        "severity": severity,
+        "location_type": location_type,
+        "repeat_report": repeat_report,
+        "priority_score": score,
+        "priority": priority
     }
 
-
     reports.append(report)
-
     save_reports()
-
 
     result_label.config(
         text=(
@@ -726,22 +646,9 @@ def submit_report():
         )
     )
 
-
-    location_entry.delete(
-        0,
-        tk.END
-    )
-
-    latitude_entry.delete(
-        0,
-        tk.END
-    )
-
-    longitude_entry.delete(
-        0,
-        tk.END
-    )
-
+    location_entry.delete(0, tk.END)
+    latitude_entry.delete(0, tk.END)
+    longitude_entry.delete(0, tk.END)
 
     for box in [
         waste_dropdown,
@@ -749,13 +656,8 @@ def submit_report():
         location_type_dropdown,
         repeat_dropdown
     ]:
-
         box.set("")
 
-
-# ==========================================================
-# SUBMIT BUTTON
-# ==========================================================
 
 tk.Button(
     report_card,
@@ -779,58 +681,20 @@ tk.Button(
 
 
 # ==========================================================
-# NAVIGATION
-# ==========================================================
-
-nav = tk.Frame(
-    content,
-    bg=BG
-)
-
-nav.pack(
-    fill="x",
-    padx=30,
-    pady=20
-)
-
-
-def nav_button(text, command):
-
-    return tk.Button(
-        nav,
-        text=text,
-        command=command,
-        font=("Arial", 10, "bold"),
-        bg=WHITE,
-        fg=DARK_GREEN,
-        activebackground=LIGHT_GREEN,
-        relief="solid",
-        bd=1,
-        padx=15,
-        pady=10,
-        cursor="hand2"
-    )
-
-
-# ==========================================================
-# REPORT DASHBOARD
+# DASHBOARD
 # ==========================================================
 
 def view_reports():
 
     win = tk.Toplevel(window)
-
     win.title("CleanRoute AI • Dashboard")
-
     win.geometry("1000x600")
-
 
     tk.Label(
         win,
         text="📊 Report Dashboard",
         font=("Arial", 20, "bold")
     ).pack(pady=15)
-
 
     columns = (
         "ID",
@@ -841,35 +705,25 @@ def view_reports():
         "Priority"
     )
 
-
     table = ttk.Treeview(
         win,
         columns=columns,
         show="headings"
     )
 
-
     for col in columns:
-
-        table.heading(
-            col,
-            text=col
-        )
-
+        table.heading(col, text=col)
 
     table.column(
         "Location",
         width=260
     )
 
-
     for report in sorted(
         reports,
-        key=lambda x:
-            x["priority_score"],
+        key=lambda x: x["priority_score"],
         reverse=True
     ):
-
         table.insert(
             "",
             tk.END,
@@ -882,7 +736,6 @@ def view_reports():
                 report["priority"]
             )
         )
-
 
     table.pack(
         fill="both",
@@ -899,13 +752,8 @@ def view_reports():
 def collection_queue():
 
     win = tk.Toplevel(window)
-
-    win.title(
-        "CleanRoute AI • Collection Queue"
-    )
-
+    win.title("CleanRoute AI • Collection Queue")
     win.geometry("900x600")
-
 
     tk.Label(
         win,
@@ -913,14 +761,11 @@ def collection_queue():
         font=("Arial", 20, "bold")
     ).pack(pady=15)
 
-
     queue = sorted(
         reports,
-        key=lambda x:
-            x["priority_score"],
+        key=lambda x: x["priority_score"],
         reverse=True
     )
-
 
     columns = (
         "Order",
@@ -931,32 +776,21 @@ def collection_queue():
         "Priority"
     )
 
-
     table = ttk.Treeview(
         win,
         columns=columns,
         show="headings"
     )
 
-
     for col in columns:
-
-        table.heading(
-            col,
-            text=col
-        )
-
+        table.heading(col, text=col)
 
     table.column(
         "Location",
         width=270
     )
 
-
-    for index, report in enumerate(
-        queue,
-        1
-    ):
+    for index, report in enumerate(queue, 1):
 
         table.insert(
             "",
@@ -970,7 +804,6 @@ def collection_queue():
                 report["priority"]
             )
         )
-
 
     table.pack(
         fill="both",
@@ -992,90 +825,147 @@ def optimized_route():
         and "longitude" in r
     ]
 
-
     if not valid:
-
         messagebox.showinfo(
             "No Route",
             "No reports with coordinates available."
         )
-
         return
 
-
-    valid.sort(
-        key=lambda x:
-            x["priority_score"],
-        reverse=True
+    # Highest-priority report becomes starting point
+    current = max(
+        valid,
+        key=lambda r: r["priority_score"]
     )
 
-
-    current = valid[0]
-
-    remaining = valid[1:]
+    remaining = [
+        r for r in valid
+        if r != current
+    ]
 
     route = [current]
-
     total_distance = 0
-
 
     while remaining:
 
-        nearest = min(
-            remaining,
-            key=lambda r:
-                calculate_distance(
-                    float(current["latitude"]),
-                    float(current["longitude"]),
-                    float(r["latitude"]),
-                    float(r["longitude"])
-                )
-        )
+        def route_score(report):
 
+            distance = calculate_distance(
+                float(current["latitude"]),
+                float(current["longitude"]),
+                float(report["latitude"]),
+                float(report["longitude"])
+            )
+
+            priority = report["priority_score"]
+
+            # Balance urgency and travel distance
+            return (priority * 2) - (distance * 5)
+
+        next_stop = max(
+            remaining,
+            key=route_score
+        )
 
         distance = calculate_distance(
             float(current["latitude"]),
             float(current["longitude"]),
-            float(nearest["latitude"]),
-            float(nearest["longitude"])
+            float(next_stop["latitude"]),
+            float(next_stop["longitude"])
         )
-
 
         total_distance += distance
 
-        route.append(nearest)
+        route.append(next_stop)
 
-        remaining.remove(nearest)
+        remaining.remove(next_stop)
 
-        current = nearest
+        current = next_stop
 
+    # ======================================================
+    # ROUTE WINDOW
+    # ======================================================
 
     win = tk.Toplevel(window)
-
-    win.title(
-        "CleanRoute AI • Optimized Route"
-    )
-
-    win.geometry("950x600")
-
+    win.title("CleanRoute AI • Optimized Route")
+    win.geometry("950x700")
+    win.configure(bg=BG)
 
     tk.Label(
         win,
         text="🗺️ Optimized Collection Route",
-        font=("Arial", 20, "bold")
-    ).pack(pady=10)
-
+        font=("Arial", 22, "bold"),
+        bg=BG,
+        fg=DARK_GREEN
+    ).pack(pady=(20, 5))
 
     tk.Label(
         win,
         text=(
-            f"🚛 Estimated Distance: "
-            f"{total_distance:.2f} km"
+            f"🚛 {len(route)} stops   •   "
+            f"📏 {total_distance:.2f} km total distance"
         ),
-        font=("Arial", 12, "bold"),
-        fg=GREEN
-    ).pack(pady=5)
+        font=("Arial", 11, "bold"),
+        bg=BG,
+        fg=MUTED
+    ).pack(pady=(0, 15))
 
+    # ======================================================
+    # VISUAL ROUTE
+    # ======================================================
+
+    route_box = tk.Frame(
+        win,
+        bg=WHITE,
+        padx=20,
+        pady=15,
+        highlightbackground="#DDE5DF",
+        highlightthickness=1
+    )
+
+    route_box.pack(
+        fill="x",
+        padx=30,
+        pady=10
+    )
+
+    for index, report in enumerate(route):
+
+        priority = report["priority"]
+
+        if priority.startswith("HIGH"):
+            icon = "🔴"
+        elif priority.startswith("MEDIUM"):
+            icon = "🟠"
+        else:
+            icon = "🟢"
+
+        prefix = (
+            "START →"
+            if index == 0
+            else "↓"
+        )
+
+        tk.Label(
+            route_box,
+            text=(
+                f"{prefix} {icon} "
+                f"{report['report_id']}  "
+                f"{report['location']}  "
+                f"({report['priority_score']})"
+            ),
+            font=("Arial", 11, "bold"),
+            bg=WHITE,
+            fg=TEXT,
+            anchor="w"
+        ).pack(
+            fill="x",
+            pady=4
+        )
+
+    # ======================================================
+    # ROUTE TABLE
+    # ======================================================
 
     columns = (
         "Stop",
@@ -1086,50 +976,64 @@ def optimized_route():
         "Distance"
     )
 
-
     table = ttk.Treeview(
         win,
         columns=columns,
         show="headings"
     )
 
-
     for col in columns:
-
         table.heading(
             col,
             text=col
         )
 
+    table.column(
+        "Stop",
+        width=60
+    )
+
+    table.column(
+        "ID",
+        width=80
+    )
 
     table.column(
         "Location",
         width=280
     )
 
+    table.column(
+        "Priority",
+        width=100
+    )
+
+    table.column(
+        "Score",
+        width=70
+    )
+
+    table.column(
+        "Distance",
+        width=100
+    )
 
     previous = None
 
-
-    for index, report in enumerate(
-        route,
-        1
-    ):
+    for index, report in enumerate(route, 1):
 
         distance_text = "START"
 
-
         if previous:
 
-            distance_text = (
-                f"{calculate_distance(
-                    float(previous['latitude']),
-                    float(previous['longitude']),
-                    float(report['latitude']),
-                    float(report['longitude'])
-                ):.2f} km"
+            distance = calculate_distance(
+                float(previous["latitude"]),
+                float(previous["longitude"]),
+                float(report["latitude"]),
+                float(report["longitude"])
             )
 
+            distance_text = f"{distance:.2f} km"
 
         table.insert(
             "",
@@ -1144,25 +1048,53 @@ def optimized_route():
             )
         )
 
-
         previous = report
-
 
     table.pack(
         fill="both",
         expand=True,
-        padx=20,
+        padx=30,
         pady=15
     )
 
 
 # ==========================================================
-# NAV BUTTONS
+# NAVIGATION
 # ==========================================================
+
+nav = tk.Frame(
+    content,
+    bg=BG
+)
+
+nav.pack(
+    fill="x",
+    padx=30,
+    pady=20
+)
 
 nav.columnconfigure(0, weight=1)
 nav.columnconfigure(1, weight=1)
 nav.columnconfigure(2, weight=1)
+
+
+def nav_button(text, command):
+
+    return tk.Button(
+        nav,
+        text=text,
+        command=command,
+        font=("Arial", 10, "bold"),
+        bg=WHITE,
+        fg=DARK_GREEN,
+        activebackground=LIGHT_GREEN,
+        relief="solid",
+        bd=1,
+        padx=15,
+        pady=10,
+        cursor="hand2"
+    )
+
 
 nav_button(
     "📊 Dashboard",
@@ -1174,6 +1106,7 @@ nav_button(
     padx=5
 )
 
+
 nav_button(
     "🚛 Collection Queue",
     collection_queue
@@ -1184,6 +1117,7 @@ nav_button(
     padx=5
 )
 
+
 nav_button(
     "🗺️ Optimize Route",
     optimized_route
@@ -1193,6 +1127,7 @@ nav_button(
     sticky="ew",
     padx=5
 )
+
 
 # ==========================================================
 # FOOTER
