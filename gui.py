@@ -759,7 +759,7 @@ def optimized_route():
     route = [current]
     total_distance = 0
 
-    # Build route using priority + distance
+    # Build optimized route
     while remaining:
 
         def route_score(report):
@@ -771,9 +771,10 @@ def optimized_route():
                 float(report["longitude"])
             )
 
-            priority = report["priority_score"]
-
-            return (priority * 2) - (distance * 5)
+            return (
+                report["priority_score"] * 2
+                - distance * 5
+            )
 
         next_stop = max(
             remaining,
@@ -790,11 +791,432 @@ def optimized_route():
         total_distance += distance
 
         route.append(next_stop)
-
         remaining.remove(next_stop)
 
         current = next_stop
 
+    # ======================================================
+    # MAP WINDOW
+    # ======================================================
+
+    win = tk.Toplevel(window)
+
+    win.title("CleanRoute AI • Route Planner")
+    win.geometry("1200x760")
+    win.minsize(950, 650)
+    win.configure(bg=BG)
+
+    # ======================================================
+    # HEADER
+    # ======================================================
+
+    header = tk.Frame(
+        win,
+        bg=DARK_GREEN,
+        height=85
+    )
+
+    header.pack(
+        fill="x"
+    )
+
+    header.pack_propagate(False)
+
+    tk.Label(
+        header,
+        text="🗺️ Optimized Collection Route",
+        font=("Arial", 21, "bold"),
+        bg=DARK_GREEN,
+        fg=WHITE
+    ).pack(
+        side="left",
+        padx=25,
+        pady=10
+    )
+
+    tk.Label(
+        header,
+        text="CleanRoute AI",
+        font=("Arial", 10, "bold"),
+        bg=DARK_GREEN,
+        fg="#C8E6C9"
+    ).pack(
+        side="right",
+        padx=25
+    )
+
+    # ======================================================
+    # MAIN AREA
+    # ======================================================
+
+    main_area = tk.Frame(
+        win,
+        bg=BG
+    )
+
+    main_area.pack(
+        fill="both",
+        expand=True,
+        padx=18,
+        pady=18
+    )
+
+    # ======================================================
+    # MAP
+    # ======================================================
+
+    map_frame = tk.Frame(
+        main_area,
+        bg=WHITE,
+        highlightbackground="#DDE5DF",
+        highlightthickness=1
+    )
+
+    map_frame.pack(
+        side="left",
+        fill="both",
+        expand=True
+    )
+
+    map_widget = tkintermapview.TkinterMapView(
+        map_frame,
+        corner_radius=0
+    )
+
+    map_widget.pack(
+        fill="both",
+        expand=True
+    )
+
+    # ======================================================
+    # SIDEBAR
+    # ======================================================
+
+    sidebar = tk.Frame(
+        main_area,
+        bg=WHITE,
+        width=300,
+        padx=18,
+        pady=18,
+        highlightbackground="#DDE5DF",
+        highlightthickness=1
+    )
+
+    sidebar.pack(
+        side="right",
+        fill="y",
+        padx=(15, 0)
+    )
+
+    sidebar.pack_propagate(False)
+
+    tk.Label(
+        sidebar,
+        text="🚛 Route Summary",
+        font=("Arial", 16, "bold"),
+        bg=WHITE,
+        fg=TEXT
+    ).pack(
+        anchor="w",
+        pady=(0, 18)
+    )
+
+    # ======================================================
+    # STAT CARDS
+    # ======================================================
+
+    def mini_stat(title, value, icon):
+
+        card = tk.Frame(
+            sidebar,
+            bg=LIGHT_GREEN,
+            padx=12,
+            pady=10
+        )
+
+        card.pack(
+            fill="x",
+            pady=5
+        )
+
+        tk.Label(
+            card,
+            text=icon,
+            font=("Arial", 15),
+            bg=LIGHT_GREEN
+        ).pack(
+            side="left"
+        )
+
+        text_frame = tk.Frame(
+            card,
+            bg=LIGHT_GREEN
+        )
+
+        text_frame.pack(
+            side="left",
+            padx=10
+        )
+
+        tk.Label(
+            text_frame,
+            text=title,
+            font=("Arial", 8),
+            bg=LIGHT_GREEN,
+            fg=MUTED
+        ).pack(
+            anchor="w"
+        )
+
+        tk.Label(
+            text_frame,
+            text=value,
+            font=("Arial", 12, "bold"),
+            bg=LIGHT_GREEN,
+            fg=DARK_GREEN
+        ).pack(
+            anchor="w"
+        )
+
+    high_count = sum(
+        r["priority"].startswith("HIGH")
+        for r in route
+    )
+
+    medium_count = sum(
+        r["priority"].startswith("MEDIUM")
+        for r in route
+    )
+
+    mini_stat(
+        "Total Stops",
+        str(len(route)),
+        "📍"
+    )
+
+    mini_stat(
+        "Total Distance",
+        f"{total_distance:.2f} km",
+        "📏"
+    )
+
+    mini_stat(
+        "High Priority",
+        str(high_count),
+        "🔴"
+    )
+
+    mini_stat(
+        "Medium Priority",
+        str(medium_count),
+        "🟠"
+    )
+
+    # ======================================================
+    # ROUTE LIST
+    # ======================================================
+
+    tk.Label(
+        sidebar,
+        text="Collection Order",
+        font=("Arial", 12, "bold"),
+        bg=WHITE,
+        fg=TEXT
+    ).pack(
+        anchor="w",
+        pady=(20, 8)
+    )
+
+    route_box = tk.Frame(
+        sidebar,
+        bg="#F8FAF8"
+    )
+
+    route_box.pack(
+        fill="both",
+        expand=True
+    )
+
+    route_canvas = tk.Canvas(
+        route_box,
+        bg="#F8FAF8",
+        highlightthickness=0
+    )
+
+    route_scroll = ttk.Scrollbar(
+        route_box,
+        orient="vertical",
+        command=route_canvas.yview
+    )
+
+    route_content = tk.Frame(
+        route_canvas,
+        bg="#F8FAF8"
+    )
+
+    route_content.bind(
+        "<Configure>",
+        lambda e: route_canvas.configure(
+            scrollregion=route_canvas.bbox("all")
+        )
+    )
+
+    route_canvas.create_window(
+        (0, 0),
+        window=route_content,
+        anchor="nw"
+    )
+
+    route_canvas.configure(
+        yscrollcommand=route_scroll.set
+    )
+
+    route_canvas.pack(
+        side="left",
+        fill="both",
+        expand=True
+    )
+
+    route_scroll.pack(
+        side="right",
+        fill="y"
+    )
+
+    # ======================================================
+    # MARKERS
+    # ======================================================
+
+    map_points = []
+
+    for index, report in enumerate(route, 1):
+
+        lat = float(report["latitude"])
+        lon = float(report["longitude"])
+
+        priority = report["priority"]
+
+        if priority.startswith("HIGH"):
+            icon = "🔴"
+        elif priority.startswith("MEDIUM"):
+            icon = "🟠"
+        else:
+            icon = "🟢"
+
+        map_widget.set_marker(
+            lat,
+            lon,
+            text=(
+                f"{index}. "
+                f"{report['location']} "
+                f"| Score: {report['priority_score']}"
+            )
+        )
+
+        map_points.append(
+            (lat, lon)
+        )
+
+        # Route sidebar item
+        item = tk.Frame(
+            route_content,
+            bg=WHITE,
+            padx=8,
+            pady=8
+        )
+
+        item.pack(
+            fill="x",
+            padx=5,
+            pady=3
+        )
+
+        tk.Label(
+            item,
+            text=f"{icon} {index}",
+            font=("Arial", 10, "bold"),
+            bg=WHITE,
+            fg=TEXT
+        ).pack(
+            side="left"
+        )
+
+        tk.Label(
+            item,
+            text=report["location"],
+            font=("Arial", 9),
+            bg=WHITE,
+            fg=TEXT,
+            wraplength=150,
+            justify="left"
+        ).pack(
+            side="left",
+            padx=8
+        )
+
+        tk.Label(
+            item,
+            text=str(report["priority_score"]),
+            font=("Arial", 9, "bold"),
+            bg=WHITE,
+            fg=DARK_GREEN
+        ).pack(
+            side="right"
+        )
+
+    # ======================================================
+    # ROUTE LINE
+    # ======================================================
+
+    if len(map_points) > 1:
+
+        map_widget.set_path(
+            map_points
+        )
+
+    # ======================================================
+    # MAP POSITION
+    # ======================================================
+
+    map_widget.set_position(
+        map_points[0][0],
+        map_points[0][1]
+    )
+
+    try:
+
+        map_widget.fit_bounding_box(
+            (
+                min(p[0] for p in map_points),
+                min(p[1] for p in map_points)
+            ),
+            (
+                max(p[0] for p in map_points),
+                max(p[1] for p in map_points)
+            )
+        )
+
+    except Exception:
+        map_widget.set_zoom(13)
+
+    # ======================================================
+    # FOOTER
+    # ======================================================
+
+    tk.Label(
+        win,
+        text=(
+            "🔴 High Priority    "
+            "🟠 Medium Priority    "
+            "🟢 Low Priority    •    "
+            "Route optimized by CleanRoute AI"
+        ),
+        font=("Arial", 9, "bold"),
+        bg=BG,
+        fg=MUTED
+    ).pack(
+        pady=(0, 10)
+    )
+    
     # ======================================================
     # MAP WINDOW
     # ======================================================
